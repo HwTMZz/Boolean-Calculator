@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Boolean Calculator</title>
+<style>
+  :root{
+    --bg:#F2F2F7;
+    --blue:#0088FF;
+    --text:#000000;
+    --text2:#4E5053;
+    --border:#CCCCCC;
+    --white:#FFFFFF;
+    --dark:#4E5053;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:#000;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  #app{
+    max-width:480px;margin:0 auto;background:var(--bg);
+    min-height:100vh; display:flex; flex-direction:column; position:relative;
+    overflow:hidden;
+  }
+  .status-spacer{height:env(safe-area-inset-top,24px); background:#ECECF0; border-radius:0 0 28px 28px;}
+
+  /* ---- Mode selector ---- */
+  .mode-row{display:flex; gap:10px; padding:16px 16px 8px; align-items:center;}
+  .mode-btn{
+    flex:1; padding:12px 6px; border-radius:24px; border:1.5px solid var(--border);
+    background:var(--bg); color:var(--text2); font-size:16px; font-weight:600;
+    text-align:center; cursor:pointer; user-select:none; transition:transform .08s ease;
+    white-space:nowrap;
+  }
+  .mode-btn.active{background:var(--blue); color:var(--white); border-color:var(--blue);}
+  .mode-btn:active{transform:scale(0.96);}
+  .cam-btn{
+    width:46px;height:46px;border-radius:50%;border:1.5px solid var(--border);
+    background:var(--bg); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    flex:0 0 auto;
+  }
+  .cam-btn:active{transform:scale(0.92);}
+
+  /* ---- Expression area ---- */
+  .expr-wrap{padding:18px 16px 4px; position:relative; min-height:64px;}
+  .expr-text{
+    font-size:26px; line-height:1.35; color:var(--text); word-break:break-word;
+    padding-right:40px; min-height:34px;
+  }
+  .expr-text.placeholder{color:#9a9aa2; font-weight:400;}
+  .expr-text b{font-weight:700;}
+  .clear-btn{
+    position:absolute; top:20px; right:16px; width:30px;height:30px;border-radius:50%;
+    border:1.5px solid var(--border); background:transparent; color:#9a9aa2;
+    display:flex;align-items:center;justify-content:center; cursor:pointer; font-size:16px;
+  }
+  .clear-btn:active{transform:scale(0.9);}
+  .error-text{color:#D93025; font-size:14px; padding:4px 16px 0; min-height:18px;}
+
+  /* ---- Answer ---- */
+  .answer-wrap{display:flex; align-items:stretch; margin:18px 16px 0;}
+  .answer-bar{width:4px; background:var(--blue); border-radius:2px; margin-right:14px; flex:0 0 auto;}
+  .answer-text{font-size:22px; color:var(--text); display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+  .answer-text b{font-size:26px; font-weight:800;}
+
+  /* ---- Main action ---- */
+  .main-action-wrap{flex:1; display:flex; align-items:flex-end; justify-content:center; padding:20px 24px 24px;}
+  .main-action{
+    background:var(--blue); color:var(--white); border:none; border-radius:28px;
+    padding:16px 30px; font-size:19px; font-weight:600; display:flex; align-items:center; gap:10px;
+    cursor:pointer; width:100%; max-width:340px; justify-content:center;
+  }
+  .main-action:active{transform:scale(0.97);}
+  .main-action:disabled{opacity:.4; pointer-events:none;}
+
+  /* ---- Bottom panel ---- */
+  .bottom-panel{background:var(--bg); border-top:1px solid var(--border); flex:0 0 auto;}
+  .assign-row{
+    display:flex; align-items:center; gap:8px; padding:12px 12px; overflow-x:auto;
+    border-bottom:1px solid var(--border); font-size:17px; font-weight:600; color:var(--text);
+  }
+  .assign-row .grow{flex:1 1 auto; display:flex; align-items:center; gap:8px; overflow-x:auto;}
+  .toggle-btn{
+    width:32px;height:32px;border-radius:50%; border:1.5px solid var(--border); background:var(--white);
+    display:flex;align-items:center;justify-content:center; font-size:15px; color:var(--text2); cursor:pointer; flex:0 0 auto;
+  }
+  .toggle-btn:active{transform:scale(0.9);}
+  .reset-btn{
+    padding:8px 16px; border-radius:20px; border:1.5px solid var(--border); background:var(--white);
+    color:var(--text2); font-size:15px; font-weight:600; cursor:pointer; white-space:nowrap; flex:0 0 auto;
+  }
+  .control-row{display:flex; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border);}
+  .ctrl-btn{
+    flex:1; padding:10px 4px; border-radius:20px; border:1.5px solid var(--border); background:var(--white);
+    color:var(--text2); font-size:15px; font-weight:600; text-align:center; cursor:pointer;
+  }
+  .ctrl-btn.active{background:var(--dark); color:var(--white); border-color:var(--dark);}
+  .ctrl-btn:active{transform:scale(0.96);}
+  .del-btn{
+    flex:0 0 52px; border-radius:20px; border:1.5px solid var(--border); background:var(--white);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text);
+  }
+
+  .kb-grid{display:grid; grid-template-columns:repeat(4,1fr);}
+  .kb-btn{
+    padding:22px 4px; text-align:center; font-size:24px; color:var(--text2);
+    border:0.5px solid var(--border); background:var(--bg); cursor:pointer; user-select:none;
+  }
+  .kb-btn:active{background:var(--blue); color:var(--white);}
+  .kb-btn.op{font-size:20px;}
+  .kb-btn.wide{grid-column:span 2;}
+
+  /* ---- Overlay: Result window ---- */
+  .overlay{
+    position:absolute; inset:0; background:rgba(20,20,25,0.55); backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px); display:flex; flex-direction:column; z-index:50;
+    animation:fadeIn .18s ease;
+  }
+  @keyframes fadeIn{from{opacity:0} to{opacity:1}}
+  .overlay-close{
+    align-self:flex-end; margin:16px 16px 0; width:32px;height:32px;border-radius:50%;
+    background:var(--white); border:1px solid var(--border); display:flex;align-items:center;justify-content:center;
+    cursor:pointer; flex:0 0 auto;
+  }
+  .overlay-scroll{flex:1; overflow-y:auto; padding:12px 16px 32px; display:flex; flex-direction:column; gap:16px;}
+  .card{
+    background:var(--white); border-radius:20px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.12);
+    animation:slideUp .22s ease;
+  }
+  @keyframes slideUp{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)}}
+  .card h3{margin:0 0 10px; font-size:20px; font-weight:800; color:var(--text);}
+  .card .sub{color:var(--text2); font-size:14px; margin-bottom:8px;}
+  .card .expr-line{font-size:18px; font-weight:700; margin:6px 0 14px; word-break:break-word;}
+  .card-btn{
+    display:block; width:100%; text-align:center; background:var(--blue); color:var(--white);
+    border:none; border-radius:20px; padding:12px; font-size:16px; font-weight:600; cursor:pointer; margin-top:6px;
+  }
+  .card-btn.ghost{background:transparent; color:var(--blue); border:1.5px solid var(--border); border-radius:20px; color:var(--text2);}
+  .card-btn:active{transform:scale(0.98);}
+  .howcome{background:transparent; border:none; color:var(--blue); font-size:15px; font-weight:600; cursor:pointer; padding:10px 0 0; display:flex; align-items:center; gap:6px;}
+  .howcome-body{font-size:14px; color:var(--text2); line-height:1.7; padding-top:8px; white-space:pre-wrap;}
+
+  table.tt{width:100%; border-collapse:collapse; margin-top:6px;}
+  table.tt th, table.tt td{border:1px solid #E5E5EA; text-align:center; padding:8px 4px; font-size:15px;}
+  table.tt th{color:var(--text2); font-weight:700;}
+  table.tt td.dim{color:#c7c7cc;}
+  table.tt td.result-col{font-weight:700;}
+
+  table.kmap{border-collapse:collapse; margin:6px auto 0;}
+  table.kmap th, table.kmap td{border:1px solid #E5E5EA; width:44px;height:40px; text-align:center; font-size:15px;}
+  table.kmap th{color:var(--text2); font-weight:600; background:#FAFAFC;}
+  table.kmap .corner{font-size:11px; color:var(--text2); position:relative;}
+
+  /* ---- Solving steps full screen ---- */
+  .solve-screen{position:absolute; inset:0; background:var(--bg); z-index:60; display:flex; flex-direction:column;}
+  .solve-top{display:flex; align-items:center; gap:14px; padding:20px 16px 6px;}
+  .solve-title{font-size:22px; font-weight:600;}
+  .solve-sub{padding:0 16px; color:var(--text); font-size:16px; margin-top:4px;}
+  .solve-body{flex:1; display:flex; align-items:center; justify-content:center; padding:20px; overflow:auto;}
+  .solve-eq{font-family:'SF Mono',Menlo,Consolas,monospace; font-size:30px; text-align:right; line-height:1.7;}
+  .solve-eq .row{display:flex; justify-content:flex-end; gap:16px; align-items:center;}
+  .solve-eq .op{font-weight:800;}
+  .solve-eq .result-row{border-top:3px solid var(--text); margin-top:6px; padding-top:6px;}
+  .solve-footer{padding:20px 24px 28px;}
+  .solve-step-note{text-align:center; color:var(--text2); font-size:14px; margin-bottom:10px;}
+
+
+  /* ---- Separate data pages ---- */
+  .full-page{
+    position:absolute; inset:0; background:var(--bg); z-index:55;
+    display:flex; flex-direction:column; min-height:100vh;
+    animation:pageIn .18s ease;
+  }
+  @keyframes pageIn{from{opacity:0;transform:translateY(8px) scale(.995)}to{opacity:1;transform:none}}
+  .page-header{
+    display:flex; align-items:center; gap:12px; padding:calc(env(safe-area-inset-top, 14px) + 12px) 16px 12px;
+    background:var(--bg); border-bottom:1px solid var(--border); flex:0 0 auto;
+  }
+  .back-btn{
+    width:42px;height:42px;border-radius:50%; border:1px solid var(--border); background:var(--white);
+    font-size:24px; color:var(--text); cursor:pointer; flex:0 0 auto;
+  }
+  .page-title{font-size:22px;font-weight:800;color:var(--text);}
+  .page-subtitle{font-size:13px;color:var(--text2);margin-top:3px;max-width:330px;word-break:break-word;}
+  .filter-wrap{padding:12px 0 10px;border-bottom:1px solid var(--border);flex:0 0 auto;}
+  .filter-scroll{display:flex;gap:8px;overflow-x:auto;padding:0 16px;}
+  .filter-pill{
+    flex:0 0 auto;border:1.5px solid var(--border);background:var(--white);color:var(--text2);
+    border-radius:20px;padding:9px 14px;font-size:14px;font-weight:650;white-space:nowrap;cursor:pointer;
+  }
+  .filter-pill.active{background:var(--blue);color:var(--white);border-color:var(--blue);}
+  .table-page-scroll{flex:1;overflow:auto;padding:16px;}
+  table.full-tt{width:max-content;min-width:100%;margin:0;background:var(--white);}
+  table.full-tt th, table.full-tt td{min-width:52px;padding:10px 9px;font-size:14px;white-space:nowrap;}
+  table.full-tt th{position:sticky;top:0;background:var(--white);z-index:1;}
+  .table-footer{text-align:center;color:var(--text2);font-size:13px;padding:8px 16px calc(12px + env(safe-area-inset-bottom,0px));}
+  .page-empty{padding:32px;text-align:center;color:var(--text2);}
+  .capsule-secondary{background:var(--white);color:var(--text2);border:1.5px solid var(--border);}
+  .capsule-secondary span{float:right;color:var(--blue);}
+  .how-viewport{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;}
+  .how-card{
+    width:100%;max-width:390px;background:var(--white);border-radius:24px;padding:28px 24px;
+    box-shadow:0 10px 30px rgba(0,0,0,.10);animation:howStepIn .22s ease;
+  }
+  @keyframes howStepIn{from{opacity:0;transform:translateX(14px) scale(.985)}to{opacity:1;transform:none}}
+  .how-step-count{color:var(--blue);font-size:14px;font-weight:700;margin-bottom:12px;}
+  .how-card h2{font-size:25px;margin:0 0 16px;}
+  .how-body{font-size:17px;line-height:1.65;color:var(--text2);}
+  .how-footer{padding:14px 20px calc(20px + env(safe-area-inset-bottom,0px));}
+  .step-nav{display:flex;gap:10px;width:100%;}
+  .nav-step{
+    flex:1;border:1.5px solid var(--border);background:var(--white);color:var(--text2);
+    border-radius:22px;padding:13px 12px;font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .nav-step:disabled{opacity:.4;cursor:default;}
+  .nav-step:not(:disabled):active{transform:scale(.97);}
+  .solve-nav{margin-top:8px;}
+  ::-webkit-scrollbar{width:0;height:0;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ================================================================
+// CORE ENGINE — Tokenizer -> Parser -> AST -> Evaluator
+// Single source of truth used by Boolean / Binary / Decimal modes.
+// ================================================================
+const KEYWORDS = { AND:'AND', OR:'OR', NOT:'NOT', NAND:'NAND', NOR:'NOR', XOR:'XOR', XNOR:'XNOR' };
+const SYMBOL_MAP = { '&':'AND', '|':'OR', '!':'NOT', '~':'NOT', '^':'XOR' };
+
+function tokenize(input, leafType){
+  const tokens=[]; let i=0; const n=input.length;
+  const compactVars=['W','X','Y','Z','A','B','C','D','P','Q','R','S','X1','X2','X3','X4'];
+  function compactVariableTokens(word,pos){
+    const upper=word.toUpperCase();
+    if(leafType!=='VAR') return null;
+    if(!upper || !/[A-Z]/.test(upper)) return null;
+    // Only split when the whole word can be losslessly segmented into known
+    // Boolean variable names. This keeps X1, X2... intact.
+    const memo=new Map();
+    function segment(s){
+      if(s.length===0) return [];
+      if(memo.has(s)) return memo.get(s);
+      for(const v of compactVars.sort((a,b)=>b.length-a.length)){
+        if(s.startsWith(v)){
+          const rest=segment(s.slice(v.length));
+          if(rest!==null){
+            const out=[v,...rest];
+            memo.set(s,out);
+            return out;
+          }
+        }
+      }
+      memo.set(s,null);
+      return null;
+    }
+    const parts=segment(upper);
+    return parts && parts.length>1 ? parts.map((v,idx)=>({type:'VAR',value:v,pos:pos+idx})) : null;
+  }
+  while(i<n){
+    const c=input[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(c==='('){tokens.push({type:'LPAREN',value:'(',pos:i});i++;continue;}
+    if(c===')'){tokens.push({type:'RPAREN',value:')',pos:i});i++;continue;}
+    if(SYMBOL_MAP[c]){tokens.push({type:'OP',value:SYMBOL_MAP[c],pos:i});i++;continue;}
+    if(/[A-Za-z]/.test(c)){
+      let j=i; while(j<n && /[A-Za-z0-9]/.test(input[j])) j++;
+      const word=input.slice(i,j); const upper=word.toUpperCase();
+      if(KEYWORDS[upper]){
+        tokens.push({type:'OP',value:KEYWORDS[upper],pos:i});
+      } else if(leafType==='VAR'){
+        const compact=compactVariableTokens(word,i);
+        if(compact){
+          compact.forEach((tok,idx)=>{
+            if(idx>0) tokens.push({type:'OP',value:'AND',pos:tok.pos});
+            tokens.push(tok);
+          });
+        } else tokens.push({type:'VAR',value:upper,pos:i});
+      } else {
+        throw new SyntaxError(`Unexpected letters "${word}"`);
+      }
+      i=j; continue;
+    }
+    if(/[0-9]/.test(c)){
+      let j=i; while(j<n && /[0-9]/.test(input[j])) j++;
+      const digits=input.slice(i,j);
+      if(leafType==='NUM'){ tokens.push({type:'NUM',value:digits,pos:i}); }
+      else { throw new SyntaxError(`Unexpected number "${digits}"`); }
+      i=j; continue;
+    }
+    throw new SyntaxError(`Unexpected character "${c}"`);
+  }
+  return tokens;
+}
+
+function parse(tokens){
+  let pos=0;
+  const peek=()=>tokens[pos];
+  const advance=()=>tokens[pos++];
+  function expect(type){
+    const t=peek();
+    if(!t||t.type!==type){
+      const friendly = type==='RPAREN' ? 'a closing parenthesis ")"' : type;
+      throw new SyntaxError(t ? `Unexpected "${t.value}" — expected ${friendly}` : `Incomplete expression — expected ${friendly}`);
+    }
+    return advance();
+  }
+  function parseOr(){
+    let node=parseXor();
+    while(peek() && peek().type==='OP' && (peek().value==='OR'||peek().value==='NOR')){
+      const op=advance(); const right=parseXor(); node={type:op.value,children:[node,right],pos:op.pos};
+    }
+    return node;
+  }
+  function parseXor(){
+    let node=parseAnd();
+    while(peek() && peek().type==='OP' && (peek().value==='XOR'||peek().value==='XNOR')){
+      const op=advance(); const right=parseAnd(); node={type:op.value,children:[node,right],pos:op.pos};
+    }
+    return node;
+  }
+  function parseAnd(){
+    let node=parseNot();
+    while(peek() && peek().type==='OP' && (peek().value==='AND'||peek().value==='NAND')){
+      const op=advance(); const right=parseNot(); node={type:op.value,children:[node,right],pos:op.pos};
+    }
+    return node;
+  }
+  function parseNot(){
+    if(peek() && peek().type==='OP' && peek().value==='NOT'){
+      const op=advance(); const child=parseNot(); return {type:'NOT',children:[child],pos:op.pos};
+    }
+    return parsePrimary();
+  }
+  function parsePrimary(){
+    const t=peek();
+    if(!t) throw new SyntaxError('Incomplete expression');
+    if(t.type==='LPAREN'){ advance(); const node=parseOr(); expect('RPAREN'); return node; }
+    if(t.type==='VAR'){ advance(); return {type:'VAR',name:t.value,pos:t.pos}; }
+    if(t.type==='NUM'){ advance(); return {type:'NUM',value:t.value,pos:t.pos}; }
+    throw new SyntaxError(`Unexpected token "${t.value}"`);
+  }
+  if(tokens.length===0) throw new SyntaxError('Empty expression');
+  const ast=parseOr();
+  if(pos<tokens.length) throw new SyntaxError(`Unexpected token "${tokens[pos].value}"`);
+  return ast;
+}
+
+function extractVars(ast, order){
+  const found=new Set();
+  (function walk(node){ if(!node) return; if(node.type==='VAR'){found.add(node.name);return;} (node.children||[]).forEach(walk); })(ast);
+  const preferred=order.filter(v=>found.has(v));
+  const rest=[...found].filter(v=>!preferred.includes(v)).sort();
+  return [...preferred, ...rest];
+}
+
+function serializeCanonical(node, parentPrec){
+  const PREC={OR:1,NOR:1,XOR:2,XNOR:2,AND:3,NAND:3,NOT:4,VAR:5,NUM:5};
+  const wrap=(s,p)=> (parentPrec!==undefined && p<parentPrec) ? `(${s})` : s;
+  switch(node.type){
+    case 'VAR': return node.name;
+    case 'NUM': return node.value;
+    case 'NOT': return `!${serializeCanonical(node.children[0],PREC.NOT)}`;
+    case 'AND': return wrap(`${serializeCanonical(node.children[0],PREC.AND)} & ${serializeCanonical(node.children[1],PREC.AND)}`,PREC.AND);
+    case 'OR': return wrap(`${serializeCanonical(node.children[0],PREC.OR)} | ${serializeCanonical(node.children[1],PREC.OR)}`,PREC.OR);
+    case 'XOR': return wrap(`${serializeCanonical(node.children[0],PREC.XOR)} ^ ${serializeCanonical(node.children[1],PREC.XOR)}`,PREC.XOR);
+    case 'NAND': return `!(${serializeCanonical(node.children[0])} & ${serializeCanonical(node.children[1])})`;
+    case 'NOR': return `!(${serializeCanonical(node.children[0])} | ${serializeCanonical(node.children[1])})`;
+    case 'XNOR': return `!(${serializeCanonical(node.children[0])} ^ ${serializeCanonical(node.children[1])})`;
+  }
+}
+
+function annotateAST(ast){
+  let nextId=0;
+  const nodes=[];
+  function walk(node,parent=null){
+    node.id=`n${nextId++}`;
+    node.parentId=parent ? parent.id : null;
+    nodes.push(node);
+    (node.children||[]).forEach(child=>walk(child,node));
+  }
+  walk(ast);
+  return nodes;
+}
+
+function nodeLabel(node){
+  if(!node) return '';
+  if(node.type==='VAR') return node.name;
+  if(node.type==='NUM') return node.value;
+  if(node.type==='NOT') return `NOT ${nodeLabel(node.children[0])}`;
+  const op=node.type;
+  return `${nodeLabel(node.children[0])} ${op} ${nodeLabel(node.children[1])}`;
+}
+
+function astDependencies(node){
+  const vars=new Set();
+  (function walk(n){
+    if(n.type==='VAR'){ vars.add(n.name); return; }
+    (n.children||[]).forEach(walk);
+  })(node);
+  return [...vars];
+}
+
+function astAnalysis(ast, vars){
+  const nodes=annotateAST(ast);
+  const byId=new Map(nodes.map(n=>[n.id,n]));
+  const opNodes=[];
+  (function collectPostOrder(node){
+    (node.children||[]).forEach(collectPostOrder);
+    if(node.type!=='VAR' && node.type!=='NUM') opNodes.push(node);
+  })(ast);
+  const filters=[{
+    id:'all',
+    label:'Show All',
+    nodeId:null,
+    dependencies:[...vars],
+    kind:'all'
+  }];
+  opNodes.forEach(node=>{
+    const subtreeIds=[];
+    (function collect(n){
+      (n.children||[]).forEach(collect);
+      subtreeIds.push(n.id);
+    })(node);
+    filters.push({
+      id:`node-${node.id}`,
+      label:nodeLabel(node),
+      nodeId:node.id,
+      dependencies:astDependencies(node),
+      nodeIds:subtreeIds,
+      kind:'node'
+    });
+  });
+  return {nodes,byId,opNodes,filters};
+}
+
+function evalBooleanDetailed(ast, bindings){
+  const values={};
+  const trace=[];
+  function ev(node){
+    if(node.type==='VAR'){
+      const value=bindings[node.name]|0;
+      values[node.id]=value;
+      return {value,text:node.name};
+    }
+    if(node.type==='NOT'){
+      const c=ev(node.children[0]); const value=c.value?0:1;
+      values[node.id]=value;
+      trace.push({nodeId:node.id,type:'NOT',before:`NOT ${c.text}`,result:value,dependencies:astDependencies(node)});
+      return {value,text:`NOT ${c.text}`};
+    }
+    const a=ev(node.children[0]), b=ev(node.children[1]); let value;
+    switch(node.type){
+      case 'AND': value=(a.value&&b.value)?1:0; break;
+      case 'OR': value=(a.value||b.value)?1:0; break;
+      case 'XOR': value=(a.value!==b.value)?1:0; break;
+      case 'NAND': value=(a.value&&b.value)?0:1; break;
+      case 'NOR': value=(a.value||b.value)?0:1; break;
+      case 'XNOR': value=(a.value!==b.value)?1:0; break;
+    }
+    values[node.id]=value;
+    trace.push({nodeId:node.id,type:node.type,before:`${a.text} ${node.type} ${b.text}`,result:value,dependencies:astDependencies(node)});
+    return {value,text:nodeLabel(node)};
+  }
+  const final=ev(ast);
+  return {value:final.value,values,trace};
+}
+
+function evalBooleanWithTrace(ast, bindings){
+  const detailed=evalBooleanDetailed(ast,bindings);
+  return {
+    value:detailed.value,
+    trace:detailed.trace.map(t=>({type:t.type,before:t.before,result:t.result,nodeId:t.nodeId,dependencies:t.dependencies}))
+  };
+}
+
+function buildTruthTableModel(ast, vars){
+  const analysis=astAnalysis(ast,vars);
+  const rows=[];
+  const n=vars.length;
+  const total=1<<n;
+  for(let i=0;i<total;i++){
+    const bindings={}; const bits=[];
+    for(let b=0;b<n;b++){
+      const bit=(i>>(n-1-b))&1;
+      bindings[vars[b]]=bit; bits.push(bit);
+    }
+    const detailed=evalBooleanDetailed(ast,bindings);
+    rows.push({
+      index:i,
+      bits,
+      bindings,
+      values:detailed.values,
+      result:detailed.value
+    });
+  }
+  const variableColumns=analysis.nodes.filter(n=>n.type==='VAR');
+  const intermediateColumns=analysis.nodes.filter(n=>n.type!=='VAR' && n.type!=='NUM' && n.id!==ast.id);
+  const orderedColumns=[...variableColumns,...intermediateColumns,ast];
+  const columns=orderedColumns.map(node=>({
+    nodeId:node.id,
+    label:node.type==='VAR' ? node.name : nodeLabel(node),
+    type:node.type,
+    dependencies:astDependencies(node),
+    isVariable:node.type==='VAR',
+    isResult:node.id===ast.id
+  }));
+  return {ast,vars,analysis,columns,rows,resultNodeId:ast.id};
+}
+
+function generateTruthTable(ast, vars){
+  return buildTruthTableModel(ast,vars).rows.map(r=>({bits:r.bits,result:r.result}));
+}
+
+function grayCode(bitsCount){
+  const size=1<<bitsCount; const out=[];
+  for(let i=0;i<size;i++){ const g=i^(i>>1); out.push(g.toString(2).padStart(bitsCount,'0')); }
+  return out;
+}
+
+function buildKMap(ast, vars){
+  const n=vars.length; const rowCount=Math.ceil(n/2); const colCount=n-rowCount;
+  const rowVars=vars.slice(0,rowCount), colVars=vars.slice(rowCount);
+  const rowCodes=grayCode(rowCount), colCodes= colCount>0?grayCode(colCount):[''];
+  const grid=rowCodes.map(rc=>colCodes.map(cc=>{
+    const bindings={};
+    rowVars.forEach((v,idx)=>bindings[v]=Number(rc[idx]));
+    colVars.forEach((v,idx)=>bindings[v]=Number(cc[idx]));
+    return evalBooleanWithTrace(ast,bindings).value;
+  }));
+  return {rowVars,colVars,rowCodes,colCodes,grid};
+}
+
+function combineTerms(a,b){
+  if(a.length!==b.length) return null;
+  let diff=0,res='';
+  for(let i=0;i<a.length;i++){
+    if(a[i]===b[i]) res+=a[i];
+    else if(a[i]==='-'||b[i]==='-') return null;
+    else { diff++; res+='-'; }
+  }
+  return diff===1?res:null;
+}
+
+function quineMcCluskey(minterms, numVars){
+  if(minterms.length===0) return {primeImplicants:[], essential:[], steps:[]};
+  let currentLevel=[...new Set(minterms.map(m=>m.toString(2).padStart(numVars,'0')))];
+  const primeImplicants=new Set(); const steps=[];
+  let level=1;
+  while(currentLevel.length>0){
+    const used=new Set(); const next=new Set();
+    for(let i=0;i<currentLevel.length;i++){
+      for(let j=i+1;j<currentLevel.length;j++){
+        const combined=combineTerms(currentLevel[i],currentLevel[j]);
+        if(combined!==null){ next.add(combined); used.add(currentLevel[i]); used.add(currentLevel[j]); }
+      }
+    }
+    currentLevel.forEach(t=>{ if(!used.has(t)) primeImplicants.add(t); });
+    steps.push(`Round ${level}: combined ${currentLevel.length} term(s) -> ${next.size} new term(s), ${currentLevel.filter(t=>!used.has(t)).length} could not combine further.`);
+    currentLevel=[...next]; level++;
+  }
+  function covers(pi,minterm){
+    const bits=minterm.toString(2).padStart(numVars,'0');
+    for(let i=0;i<pi.length;i++){ if(pi[i]!=='-' && pi[i]!==bits[i]) return false; }
+    return true;
+  }
+  const piList=[...primeImplicants];
+  const chart=piList.map(pi=>minterms.filter(m=>covers(pi,m)));
+  const essential=new Set(); const covered=new Set();
+  minterms.forEach(m=>{
+    const coveringPis=piList.filter(pi=>covers(pi,m));
+    if(coveringPis.length===1) essential.add(coveringPis[0]);
+  });
+  essential.forEach(pi=>{ chart[piList.indexOf(pi)].forEach(m=>covered.add(m)); });
+  let remaining=minterms.filter(m=>!covered.has(m));
+  const chosen=new Set(essential);
+  while(remaining.length>0){
+    let best=null,bestCount=-1;
+    piList.forEach((pi,idx)=>{
+      if(chosen.has(pi)) return;
+      const c=chart[idx].filter(m=>remaining.includes(m)).length;
+      if(c>bestCount){bestCount=c;best=pi;}
+    });
+    if(!best||bestCount===0) break;
+    chosen.add(best);
+    remaining=remaining.filter(m=>!chart[piList.indexOf(best)].includes(m));
+  }
+  return {primeImplicants:piList, essential:[...chosen], steps};
+}
+
+function piToExpression(pi, vars){
+  const parts=[];
+  for(let i=0;i<pi.length;i++){ if(pi[i]==='1') parts.push(vars[i]); else if(pi[i]==='0') parts.push(`!${vars[i]}`); }
+  return parts.length? parts.join(' & ') : '1';
+}
+
+function simplifyExpression(ast, vars){
+  const rows=generateTruthTable(ast, vars);
+  const minterms=[]; rows.forEach((r,i)=>{ if(r.result===1) minterms.push(i); });
+  if(minterms.length===0) return {expr:'0', minterms, essential:[], steps:[]};
+  if(minterms.length===(1<<vars.length)) return {expr:'1', minterms, essential:[], steps:[]};
+  const {essential, steps}=quineMcCluskey(minterms, vars.length);
+  const expr=essential.map(pi=>piToExpression(pi,vars)).join(' | ');
+  return {expr, minterms, essential, steps};
+}
+
+function decToBits(decStr){ const num=parseInt(decStr,10)||0; return num.toString(2).split('').map(Number); }
+function bitsToDec(bits){ return parseInt(bits.join('')||'0',2); }
+function padBits(bits,len){ const a=bits.slice(); while(a.length<len) a.unshift(0); return a; }
+function collectNumLeaves(ast){ const leaves=[]; (function walk(n){ if(n.type==='NUM'){leaves.push(n);return;} (n.children||[]).forEach(walk); })(ast); return leaves; }
+
+function evalBitwiseWithTrace(ast, mode){
+  const leaves=collectNumLeaves(ast);
+  const bitArrays=leaves.map(l=> mode==='decimal' ? decToBits(l.value) : l.value.split('').map(Number));
+  const width=Math.max(...bitArrays.map(a=>a.length),1);
+  const cache=new Map();
+  leaves.forEach((l,idx)=>cache.set(l, padBits(bitArrays[idx], width)));
+  const trace=[];
+  function ev(node){
+    if(node.type==='NUM') return cache.get(node);
+    if(node.type==='NOT'){ const a=ev(node.children[0]); const out=a.map(b=>b?0:1); trace.push({type:'NOT',a,out}); return out; }
+    const a=ev(node.children[0]), b=ev(node.children[1]); const out=[];
+    for(let i=0;i<width;i++){
+      let bit;
+      switch(node.type){
+        case 'AND': bit=(a[i]&b[i]); break;
+        case 'OR': bit=(a[i]|b[i]); break;
+        case 'XOR': bit=(a[i]^b[i]); break;
+        case 'NAND': bit=(a[i]&b[i])?0:1; break;
+        case 'NOR': bit=(a[i]|b[i])?0:1; break;
+        case 'XNOR': bit=(a[i]^b[i])?0:1; break;
+      }
+      out.push(bit);
+    }
+    trace.push({type:node.type,a,b,out});
+    return out;
+  }
+  const result=ev(ast);
+  return {bits:result, decimal:bitsToDec(result), trace, width, leavesBits:leaves.map((l,idx)=>padBits(bitArrays[idx],width))};
+}
+
+// ================================================================
+// APPLICATION STATE + UI
+// ================================================================
+const VAR_ORDER = ['W','X','Y','Z','A','B','C','D','P','Q','R','S','X1','X2','X3','X4'];
+const VARSETS = { WXYZ:['W','X','Y','Z'], ABCD:['A','B','C','D'], PQRS:['P','Q','R','S'], X1234:['X1','X2','X3','X4'] };
+const VARSET_KEYS = Object.keys(VARSETS);
+const OP_SUBTITLE = { AND:'Boolean Product', OR:'Boolean Sum', NOT:'Boolean Complement', XOR:'Boolean XOR', NAND:'Boolean NAND', NOR:'Boolean NOR', XNOR:'Boolean XNOR' };
+
+const state = {
+  mode:'boolean',
+  varset:'WXYZ',
+  notation:'word',
+  advanced:false,
+  tokens:[],
+  assignments:{},
+  error:null,
+  page:'main', // main | result | truthTable | howCome
+  truthTableModel:null,
+  truthTableFilter:'all',
+  howComeStep:0,
+  overlay:null, // {type:'solve', ...}
+};
+
+function currentVars(){ return VARSETS[state.varset]; }
+function opDisplay(kind){
+  if(state.notation==='symbol'){
+    if(kind==='AND') return '*';
+    if(kind==='OR') return '+';
+    if(kind==='NOT') return '~';
+  }
+  return kind;
+}
+function buildParseString(){
+  return state.tokens.map(t=>{
+    if(t.kind==='VAR'||t.kind==='NUM') return t.value;
+    if(t.kind==='LPAREN') return '(';
+    if(t.kind==='RPAREN') return ')';
+    return t.kind;
+  }).join(' ');
+}
+function buildDisplayHTML(){
+  if(state.tokens.length===0) return null;
+  return state.tokens.map(t=>{
+    if(t.kind==='VAR'||t.kind==='NUM') return esc(t.value);
+    if(t.kind==='LPAREN') return '(';
+    if(t.kind==='RPAREN') return ')';
+    return `<b>${esc(opDisplay(t.kind))}</b>`;
+  }).join(' ');
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function leafTypeForMode(){ return state.mode==='boolean' ? 'VAR' : 'NUM'; }
+
+function tryParseCurrent(){
+  state.error=null;
+  if(state.tokens.length===0) return null;
+  try{
+    const str=buildParseString();
+    const toks=tokenize(str, leafTypeForMode());
+    const ast=parse(toks);
+    return ast;
+  }catch(e){ state.error=e.message; return null; }
+}
+
+function addToken(kind, value){
+  state.overlay=null;
+  if(kind==='PAREN'){
+    const open=state.tokens.filter(t=>t.kind==='LPAREN').length;
+    const close=state.tokens.filter(t=>t.kind==='RPAREN').length;
+    state.tokens.push({kind: open>close ? 'RPAREN' : 'LPAREN'});
+  } else if(kind==='VAR'){
+    state.tokens.push({kind:'VAR', value});
+  } else if(kind==='NUM'){
+    const last=state.tokens[state.tokens.length-1];
+    if(last && last.kind==='NUM'){ last.value += value; }
+    else { state.tokens.push({kind:'NUM', value}); }
+  } else {
+    state.tokens.push({kind});
+  }
+  render();
+}
+function deleteToken(){
+  state.overlay=null;
+  state.tokens.pop();
+  render();
+}
+function clearExpr(){
+  state.overlay=null;
+  state.tokens=[]; state.error=null;
+  render();
+}
+function cycleVarset(){
+  const idx=VARSET_KEYS.indexOf(state.varset);
+  state.varset=VARSET_KEYS[(idx+1)%VARSET_KEYS.length];
+  render();
+}
+function toggleNotation(){ state.notation = state.notation==='word' ? 'symbol' : 'word'; render(); }
+function toggleAdvanced(){ state.advanced=!state.advanced; render(); }
+function switchMode(m){
+  if(state.mode===m) return;
+  state.mode=m; state.tokens=[]; state.error=null; state.overlay=null;
+  render();
+}
+function cycleAssignment(v){
+  const cur=state.assignments[v] || '*';
+  state.assignments[v] = cur==='*' ? '0' : cur==='0' ? '1' : '*';
+  render();
+}
+function resetAssignments(){
+  currentVars().forEach(v=> state.assignments[v]='*');
+  render();
+}
+function cameraTap(){
+  alert('Camera / OCR expression input is a planned feature — not available yet.');
+}
+
+// ---------------- Rendering ----------------
+function render(){
+  const app=document.getElementById('app');
+  if(state.page==='truthTable'){
+    app.innerHTML=renderFullTruthTablePage();
+    return;
+  }
+  if(state.page==='howCome'){
+    app.innerHTML=renderHowComePage();
+    return;
+  }
+  app.innerHTML = renderShell();
+  if(state.page==='result') renderResultOverlay();
+  if(state.overlay && state.overlay.type==='solve') renderSolveOverlay();
+}
+
+function renderShell(){
+  const ast = state.tokens.length ? tryParseCurrent() : (state.error=null, null);
+  return `
+    <div class="status-spacer"></div>
+    ${renderModeRow()}
+    ${renderExprArea()}
+    ${renderAnswerArea(ast)}
+    <div class="main-action-wrap">${renderMainButton(ast)}</div>
+    ${renderBottomPanel()}
+    <div id="overlay-root"></div>
+  `;
+}
+
+function renderModeRow(){
+  const modes=[['boolean','Boolean'],['binary','Binary'],['decimal','Decimal']];
+  return `<div class="mode-row">
+    ${modes.map(([id,label])=>`<div class="mode-btn ${state.mode===id?'active':''}" onclick="switchMode('${id}')">${label}</div>`).join('')}
+    <div class="cam-btn" onclick="cameraTap()">${cameraIcon()}</div>
+  </div>`;
+}
+function cameraIcon(){
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4E5053" stroke-width="1.6"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.4"/></svg>`;
+}
+
+function renderExprArea(){
+  const html=buildDisplayHTML();
+  const body = html===null
+    ? `<div class="expr-text placeholder">Type an Expressions...</div>`
+    : `<div class="expr-text">${html}</div>`;
+  return `<div class="expr-wrap">
+      ${body}
+      <div class="clear-btn" onclick="clearExpr()">&#10005;</div>
+    </div>
+    <div class="error-text">${state.error ? esc(state.error) : ''}</div>`;
+}
+
+function renderAnswerArea(ast){
+  if(state.tokens.length===0) return `<div class="answer-wrap"></div>`;
+  if(!ast) return `<div class="answer-wrap"></div>`;
+  if(state.mode==='boolean'){
+    const vars=extractVars(ast, VAR_ORDER);
+    const bindings={};
+    vars.forEach(v=>{ const a=state.assignments[v]; bindings[v] = (a==='0'||a==='1') ? Number(a) : 0; });
+    const {value}=evalBooleanWithTrace(ast, bindings);
+    const tuple=vars.map(v=>bindings[v]).join(', ');
+    return `<div class="answer-wrap"><div class="answer-bar"></div><div class="answer-text">Answer (${tuple}) = <b>${value}</b></div></div>`;
+  } else {
+    try{
+      const {bits, decimal}=evalBitwiseWithTrace(ast, state.mode);
+      if(state.mode==='binary'){
+        return `<div class="answer-wrap"><div class="answer-bar"></div><div class="answer-text">Answer = <b>${bits.join('')}</b></div></div>`;
+      } else {
+        return `<div class="answer-wrap"><div class="answer-bar"></div><div class="answer-text">Answer = <b>${bits.join('')}, ${decimal}</b></div></div>`;
+      }
+    }catch(e){ return `<div class="answer-wrap"></div>`; }
+  }
+}
+
+function renderMainButton(ast){
+  const enabled = !!ast;
+  if(state.mode==='boolean'){
+    return `<button class="main-action" ${enabled?'':'disabled'} onclick="openResultWindow()">Show Full Table &#8618;</button>`;
+  }
+  return `<button class="main-action" ${enabled?'':'disabled'} onclick="openBinaryDecimalSolve()">Show Solving Steps &#8618;</button>`;
+}
+
+function renderBottomPanel(){
+  return `<div class="bottom-panel">
+    ${state.mode==='boolean' ? renderAssignRow() : ''}
+    ${renderControlRow()}
+    ${renderKeyboard()}
+  </div>`;
+}
+
+function renderAssignRow(){
+  const vars=currentVars();
+  return `<div class="assign-row">
+    <div class="grow">
+    ${vars.map(v=>{
+      const val=state.assignments[v] || '*';
+      return `${esc(v)} <div class="toggle-btn" onclick="cycleAssignment('${v}')">${val}</div>`;
+    }).join('')}
+    </div>
+    <div class="reset-btn" onclick="resetAssignments()">Reset</div>
+  </div>`;
+}
+
+function renderControlRow(){
+  const varsetBtn = state.mode==='boolean' ? `<div class="ctrl-btn" onclick="cycleVarset()">${state.varset}</div>` : '';
+  return `<div class="control-row">
+    ${varsetBtn}
+    <div class="ctrl-btn" onclick="toggleNotation()">* + ~</div>
+    <div class="ctrl-btn ${state.advanced?'active':''}" onclick="toggleAdvanced()">Advance</div>
+    <div class="del-btn" onclick="deleteToken()">${deleteIcon()}</div>
+  </div>`;
+}
+function deleteIcon(){
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8l-6-7 6-7z"/><path d="M13 10l4 4M17 10l-4 4"/></svg>`;
+}
+
+function renderKeyboard(){
+  if(state.mode==='boolean') return renderBooleanKeyboard();
+  if(state.mode==='binary') return renderBinaryKeyboard();
+  return renderDecimalKeyboard();
+}
+
+function opButton(kind){
+  return `<div class="kb-btn op" onclick="addToken('${kind}')">${esc(opDisplay(kind))}</div>`;
+}
+function renderOperatorRows(){
+  let rows='';
+  if(state.advanced){
+    rows += `<div class="kb-grid">${['NAND','NOR','XOR','XNOR'].map(opButton).join('')}</div>`;
+  }
+  rows += `<div class="kb-grid">${opButton('AND')}${opButton('OR')}${opButton('NOT')}<div class="kb-btn op" onclick="addToken('PAREN')">( )</div></div>`;
+  return rows;
+}
+
+function renderBooleanKeyboard(){
+  const vars=currentVars();
+  const variableRow=state.advanced
+    ? ''
+    : `<div class="kb-grid">${vars.map(v=>`<div class="kb-btn" onclick="addToken('VAR','${v}')">${esc(v)}</div>`).join('')}</div>`;
+  return `${variableRow}${renderOperatorRows()}`;
+}
+
+function renderBinaryKeyboard(){
+  return `<div class="kb-grid">
+    <div class="kb-btn wide" onclick="addToken('NUM','0')">0</div>
+    <div class="kb-btn wide" onclick="addToken('NUM','1')">1</div>
+  </div>
+  ${renderOperatorRows()}`;
+}
+
+function renderDecimalKeyboard(){
+  return `<div class="kb-grid">
+    <div class="kb-btn" onclick="addToken('NUM','7')">7</div>
+    <div class="kb-btn" onclick="addToken('NUM','8')">8</div>
+    <div class="kb-btn" onclick="addToken('NUM','9')">9</div>
+    ${opButton('AND')}
+    <div class="kb-btn" onclick="addToken('NUM','4')">4</div>
+    <div class="kb-btn" onclick="addToken('NUM','5')">5</div>
+    <div class="kb-btn" onclick="addToken('NUM','6')">6</div>
+    ${opButton('OR')}
+    <div class="kb-btn" onclick="addToken('NUM','1')">1</div>
+    <div class="kb-btn" onclick="addToken('NUM','2')">2</div>
+    <div class="kb-btn" onclick="addToken('NUM','3')">3</div>
+    ${opButton('NOT')}
+    <div class="kb-btn" onclick="addToken('NUM','00')">00</div>
+    <div class="kb-btn wide" onclick="addToken('NUM','0')">0</div>
+    <div class="kb-btn op" onclick="addToken('PAREN')">( )</div>
+  </div>
+  ${state.advanced ? `<div class="kb-grid">${['NAND','NOR','XOR','XNOR'].map(opButton).join('')}</div>` : ''}`;
+}
+
+// ---------------- Result window (Boolean mode) ----------------
+function openResultWindow(){
+  const ast=tryParseCurrent();
+  if(!ast) return;
+  const vars=extractVars(ast,VAR_ORDER);
+  state.truthTableModel=buildTruthTableModel(ast,vars);
+  state.truthTableFilter='all';
+  state.page='result';
+  state.overlay=null;
+  render();
+}
+function closeOverlay(){
+  state.page='main';
+  state.truthTableModel=null;
+  state.truthTableFilter='all';
+  state.overlay=null;
+  render();
+}
+
+function resultContext(){
+  const ast=tryParseCurrent();
+  if(!ast) return null;
+  const vars=extractVars(ast, VAR_ORDER);
+  const bindings={};
+  vars.forEach(v=>{ const a=state.assignments[v]; bindings[v]=(a==='0'||a==='1')?Number(a):0; });
+  const {value:calcResult, trace:calcTrace}=evalBooleanWithTrace(ast, bindings);
+  const model=state.truthTableModel || buildTruthTableModel(ast,vars);
+  const simp=simplifyExpression(ast,vars);
+  return {ast,vars,bindings,calcResult,calcTrace,model,simp,displayExpr:buildDisplayHTML(),canonical:serializeCanonical(ast)};
+}
+
+function renderResultOverlay(){
+  const root=document.getElementById('overlay-root');
+  const ctx=resultContext();
+  if(!ctx){ state.page='main'; state.truthTableModel=null; root.innerHTML=''; return; }
+  const {vars,bindings,calcResult,calcTrace,model,simp,displayExpr,canonical}=ctx;
+  const rows=model.rows;
+  const previewRows=rows.slice(0,Math.min(8,rows.length));
+  const assignLine=vars.map(v=>`${v}:${bindings[v]}`).join(', ');
+
+  let kmapHtml='';
+  if(vars.length>=2 && vars.length<=4){
+    const km=buildKMap(ctx.ast,vars);
+    const rowLabel=km.rowVars.join('');
+    const colLabel=km.colVars.join('');
+    kmapHtml=`<div class="card">
+      <h3>K-Map</h3>
+      <table class="kmap">
+        <tr><th class="corner">${esc(rowLabel)}\\${esc(colLabel)}</th>${km.colCodes.map(c=>`<th>${c}</th>`).join('')}</tr>
+        ${km.grid.map((row,ri)=>`<tr><th>${km.rowCodes[ri]}</th>${row.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}
+      </table>
+    </div>`;
+  }
+
+  root.innerHTML=`<div class="overlay">
+    <div class="overlay-close" onclick="closeOverlay()">&#10005;</div>
+    <div class="overlay-scroll">
+      <div class="card">
+        <h3>Calculate Expressions</h3>
+        <div class="sub">${esc(assignLine)}</div>
+        <div class="expr-line">${displayExpr} = ${calcResult}</div>
+        <button class="card-btn" onclick="openTraceSolve()">Show Solving Steps</button>
+      </div>
+
+      <div class="card">
+        <h3>Full Truth Table</h3>
+        <table class="tt">
+          <tr>${vars.map(v=>`<th>${esc(v)}</th>`).join('')}<th>F</th></tr>
+          ${previewRows.map(r=>`<tr>${r.bits.map(b=>`<td>${b}</td>`).join('')}<td class="result-col">${r.result}</td></tr>`).join('')}
+        </table>
+        <button class="card-btn" onclick="openFullTruthTable()">Show Full Table</button>
+        <button class="card-btn capsule-secondary" onclick="openHowCome()">How'd it come? <span>&#8594;</span></button>
+      </div>
+
+      <div class="card">
+        <h3>Simplify Expressions</h3>
+        <div class="expr-line">${esc(canonical)}<br>&#8595;<br>${esc(simp.expr)}</div>
+        <button class="card-btn" onclick="openSimplifySolve()">Show Solving Steps</button>
+      </div>
+
+      ${kmapHtml}
+    </div>
+  </div>`;
+}
+
+function openFullTruthTable(){
+  if(!state.truthTableModel){
+    const ast=tryParseCurrent(); if(!ast) return;
+    const vars=extractVars(ast,VAR_ORDER);
+    state.truthTableModel=buildTruthTableModel(ast,vars);
+  }
+  state.truthTableFilter='all';
+  state.page='truthTable';
+  state.overlay=null;
+  render();
+}
+
+function openHowCome(){
+  if(!state.truthTableModel){
+    const ast=tryParseCurrent(); if(!ast) return;
+    const vars=extractVars(ast,VAR_ORDER);
+    state.truthTableModel=buildTruthTableModel(ast,vars);
+  }
+  state.howComeStep=0;
+  state.page='howCome';
+  state.overlay=null;
+  render();
+}
+
+function backToResult(){
+  state.page='result';
+  state.overlay=null;
+  render();
+}
+
+function filterTruthTable(id){
+  state.truthTableFilter=id;
+  render();
+}
+
+function selectedTruthColumns(model){
+  if(state.truthTableFilter==='all'){
+    return model.columns.filter(c=>c.isVariable || c.type!=='VAR' || c.isResult);
+  }
+  const filter=model.analysis.filters.find(f=>f.id===state.truthTableFilter) || model.analysis.filters[0];
+  const deps=new Set(filter.dependencies);
+  const nodeIds=filter.nodeIds || (filter.nodeId ? [filter.nodeId] : []);
+  const byId=new Map(model.columns.map(c=>[c.nodeId,c]));
+  return nodeIds.map(id=>byId.get(id)).filter(Boolean);
+}
+
+function renderTruthTableColumns(model){
+  const cols=selectedTruthColumns(model);
+  return cols;
+}
+
+function renderFullTruthTablePage(){
+  const model=state.truthTableModel;
+  if(!model) return `<div class="full-page"><div class="page-header"><button onclick="backToResult()">&#8592;</button><h1>Full Truth Table</h1></div><div class="page-empty">No truth table data.</div></div>`;
+  const filters=model.analysis.filters;
+  const cols=renderTruthTableColumns(model);
+  const expr=serializeCanonical(model.ast);
+  return `<div class="full-page">
+    <div class="page-header">
+      <button class="back-btn" onclick="backToResult()">&#8592;</button>
+      <div><div class="page-title">Full Truth Table</div><div class="page-subtitle">${esc(expr)}</div></div>
+    </div>
+    <div class="filter-wrap">
+      <div class="filter-scroll">
+        ${filters.map(f=>`<button class="filter-pill ${state.truthTableFilter===f.id?'active':''}" onclick="filterTruthTable('${f.id}')">${esc(f.label)}</button>`).join('')}
+      </div>
+    </div>
+    <div class="table-page-scroll">
+      <table class="tt full-tt">
+        <thead><tr>${cols.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${model.rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.isResult?'result-col':''}">${r.values[c.nodeId]}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">${model.rows.length} row${model.rows.length===1?'':'s'} · ${cols.length} column${cols.length===1?'':'s'}</div>
+  </div>`;
+}
+
+function buildHowComeSteps(model){
+  const vars=model.vars;
+  const steps=[
+    {title:'Identify variables',body:`The expression uses ${vars.length} variable${vars.length===1?'':'s'}: ${vars.join(', ')}.`},
+    {title:'Count rows',body:`${vars.length} variable${vars.length===1?'':'s'} produce 2^${vars.length} = ${model.rows.length} truth-table row${model.rows.length===1?'':'s'}.`},
+    {title:'Generate binary combinations',body:`Rows are generated in binary counting order from ${'0'.repeat(vars.length)} to ${'1'.repeat(vars.length)}.`},
+    {title:'Assign each combination',body:`Each binary row maps left-to-right onto ${vars.join(', ')}.`}
+  ];
+  model.analysis.opNodes.forEach(node=>{
+    steps.push({
+      title:`Evaluate ${nodeLabel(node)}`,
+      body:`Compute the ${node.type} node from its child expression${node.type==='NOT'?'':'s'}, using the same AST evaluator that produces the final result.`
+    });
+  });
+  steps.push({
+    title:'Build the final table',
+    body:`The final result column is the root expression "${nodeLabel(model.ast)}", using the values already computed for every AST node.`
+  });
+  return steps;
+}
+
+function renderHowComePage(){
+  const model=state.truthTableModel;
+  if(!model) return `<div class="full-page"><div class="page-header"><button class="back-btn" onclick="backToResult()">&#8592;</button><div class="page-title">How'd it come?</div></div><div class="page-empty">No explanation data.</div></div>`;
+  const steps=buildHowComeSteps(model);
+  const index=Math.min(state.howComeStep||0,steps.length-1);
+  const step=steps[index];
+  return `<div class="full-page how-page">
+    <div class="page-header">
+      <button class="back-btn" onclick="backToResult()">&#8592;</button>
+      <div><div class="page-title">How'd it come?</div><div class="page-subtitle">${esc(nodeLabel(model.ast))}</div></div>
+    </div>
+    <div class="how-viewport">
+      <div class="how-card" key="${index}">
+        <div class="how-step-count">Step ${index+1} of ${steps.length}</div>
+        <h2>${esc(step.title)}</h2>
+        <div class="how-body">${esc(step.body)}</div>
+      </div>
+    </div>
+    <div class="how-footer">
+      <div class="solve-step-note">${index===steps.length-1?'Final step':'Use Previous / Next to move through the actual expression flow.'}</div>
+      <div class="step-nav">
+        <button class="nav-step" onclick="prevHowCome()" ${index===0?'disabled':''}>&#8592; Previous</button>
+        <button class="nav-step" onclick="nextHowCome()" ${index===steps.length-1?'disabled':''}>Next &#8594;</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function prevHowCome(){
+  state.howComeStep=Math.max(0,(state.howComeStep||0)-1);
+  render();
+}
+function nextHowCome(){
+  const model=state.truthTableModel;
+  if(!model) return;
+  const max=buildHowComeSteps(model).length-1;
+  state.howComeStep=Math.min(max,(state.howComeStep||0)+1);
+  render();
+}
+
+// ---- Solving steps: boolean evaluation trace ----
+function openTraceSolve(){
+  const ast=tryParseCurrent(); if(!ast) return;
+  const vars=extractVars(ast, VAR_ORDER);
+  const bindings={};
+  vars.forEach(v=>{ const a=state.assignments[v]; bindings[v]=(a==='0'||a==='1')?Number(a):0; });
+  const {trace}=evalBooleanWithTrace(ast, bindings);
+  state.overlay={type:'solve', kind:'trace', trace, step:0, subtitle:'Solving Steps'};
+  render();
+}
+function openSimplifySolve(){
+  const ast=tryParseCurrent(); if(!ast) return;
+  const vars=extractVars(ast, VAR_ORDER);
+  const simp=simplifyExpression(ast, vars);
+  const lines=[
+    `Minterms where result = 1: ${simp.minterms.length ? simp.minterms.map(m=>m.toString(2).padStart(vars.length,'0')).join(', ') : '(none)'}`,
+    ...simp.steps,
+    `Prime implicants selected: ${simp.essential.length ? simp.essential.join(', ') : '(none)'}`,
+    `Simplified expression: ${simp.expr}`
+  ];
+  state.overlay={type:'solve', kind:'text', lines, step:0, subtitle:'Simplification (Quine–McCluskey)'};
+  render();
+}
+
+// ---- Solving steps: binary / decimal bitwise, revealed column by column ----
+function openBinaryDecimalSolve(){
+  const ast=tryParseCurrent(); if(!ast) return;
+  try{
+    const res=evalBitwiseWithTrace(ast, state.mode);
+    const rootType = ast.type;
+    state.overlay={type:'solve', kind:'bitwise', mode:state.mode, opType: rootType, res, step:0};
+    render();
+  }catch(e){ state.error=e.message; render(); }
+}
+
+function nextSolveStep(){
+  const o=state.overlay;
+  if(o.kind==='trace'){ if(o.step < o.trace.length-1) o.step++; }
+  else if(o.kind==='text'){ if(o.step < o.lines.length-1) o.step++; }
+  else if(o.kind==='bitwise'){ if(o.step < o.res.width) o.step++; }
+  renderSolveOverlay();
+}
+
+function prevSolveStep(){
+  const o=state.overlay;
+  if(o.kind==='trace'){ if(o.step > 0) o.step--; }
+  else if(o.kind==='text'){ if(o.step > 0) o.step--; }
+  else if(o.kind==='bitwise'){ if(o.step > 0) o.step--; }
+  renderSolveOverlay();
+}
+
+function renderSolveOverlay(){
+  const root=document.getElementById('overlay-root');
+  const o=state.overlay;
+  let subtitle='', body='', footerNote='';
+
+  if(o.kind==='trace'){
+    subtitle='Boolean Evaluation';
+    const t=o.trace[o.step];
+    body = `<div class="solve-eq"><div class="row">${esc(t.before)}</div><div class="row result-row">= ${t.result}</div></div>`;
+    footerNote = `Step ${o.step+1} of ${o.trace.length}`;
+  } else if(o.kind==='text'){
+    subtitle=o.subtitle;
+    body = `<div class="solve-eq" style="text-align:left; font-size:16px; line-height:1.8;">${esc(o.lines[o.step])}</div>`;
+    footerNote = `Step ${o.step+1} of ${o.lines.length}`;
+  } else if(o.kind==='bitwise'){
+    subtitle = OP_SUBTITLE[o.opType] || 'Boolean Operation';
+    const res=o.res;
+    const width=res.width;
+    const revealed=o.step;
+    const operands=res.leavesBits;
+    const renderOperand=(bits)=> bits.join('');
+    let resultDisplay='';
+    if(revealed===0){
+      resultDisplay = `<span style="color:#c7c7cc;">${'?'.repeat(width)}</span>`;
+    } else {
+      const known=res.bits.slice(0, revealed).join('');
+      const unknown='?'.repeat(width-revealed);
+      resultDisplay = `${known}<span style="color:#c7c7cc;">${unknown}</span>`;
+    }
+    if(operands.length===2){
+      body = `<div class="solve-eq">
+        <div class="row">${renderOperand(operands[0])}</div>
+        <div class="row"><span class="op">${o.opType}</span></div>
+        <div class="row result-row">${renderOperand(operands[1])}</div>
+        <div class="row" style="margin-top:18px;">= ${resultDisplay}${(state.mode==='decimal'&&revealed===width)?`, ${res.decimal}`:''}</div>
+      </div>`;
+    } else {
+      body = `<div class="solve-eq">
+        <div class="row"><span class="op">${o.opType}</span> ${renderOperand(operands[0])}</div>
+        <div class="row result-row">= ${resultDisplay}${(state.mode==='decimal'&&revealed===width)?`, ${res.decimal}`:''}</div>
+      </div>`;
+    }
+    footerNote = revealed===0 ? 'Tap next to reveal the result bit by bit' : `Revealed ${revealed} of ${width} bit(s)`;
+  }
+
+  const isLast = (o.kind==='trace' && o.step>=o.trace.length-1) ||
+                 (o.kind==='text' && o.step>=o.lines.length-1) ||
+                 (o.kind==='bitwise' && o.step>=o.res.width);
+
+  root.innerHTML = `<div class="solve-screen">
+    <div class="solve-top">
+      <div class="overlay-close" style="margin:0;" onclick="closeSolve()">&#10005;</div>
+      <div class="solve-title">Solving steps</div>
+    </div>
+    <div class="solve-sub">${esc(subtitle)}</div>
+    <div class="solve-body">${body}</div>
+    <div class="solve-footer">
+      <div class="solve-step-note">${esc(footerNote)}</div>
+      <div class="step-nav solve-nav">
+        <button class="nav-step" onclick="prevSolveStep()" ${o.step===0?'disabled':''}>&#8592; Previous</button>
+        <button class="nav-step" onclick="${isLast?'closeSolve()':'nextSolveStep()'}">${isLast?'Done':'Next'} &#8594;</button>
+      </div>
+    </div>
+  </div>`;
+}
+function closeSolve(){
+  if(state.mode==='boolean'){
+    state.page='result';
+    state.overlay=null;
+    render();
+  } else {
+    state.overlay=null;
+    render();
+  }
+}
+
+// ---------------- init ----------------
+render();
+</script>
+</body>
+</html>
